@@ -36,6 +36,10 @@ vendor/
 *_extracted.txt
 test_output/
 
+# Test data (PDFs can be large)
+**/testdata/*.pdf
+!**/testdata/README.md
+
 # Temporary files
 *.tmp
 *.log

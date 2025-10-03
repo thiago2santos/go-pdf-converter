@@ -3,6 +3,7 @@
 [![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Go Report Card](https://goreportcard.com/badge/github.com/thiago2santos/go-pdf-converter)](https://goreportcard.com/report/github.com/thiago2santos/go-pdf-converter)
+[![codecov](https://codecov.io/gh/thiago2santos/go-pdf-converter/branch/main/graph/badge.svg)](https://codecov.io/gh/thiago2santos/go-pdf-converter)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 A fast, efficient PDF to text converter with automatic OCR fallback. Extract text from any PDF—whether it's text-based or image-based.
@@ -198,13 +199,46 @@ Total Pages: 3
 ### Running Tests
 
 ```bash
+# Run unit tests
 make test
+
+# Run tests with race detector (requires CGO)
+make test-race
+
+# Run integration tests (requires test PDFs in testdata/)
+make test-integration
+
+# Run tests with coverage
+make coverage
 ```
+
+### Test Coverage
+
+We maintain comprehensive unit tests for the converter library:
+- Configuration and initialization
+- Error handling
+- Input validation
+- Method selection logic
+
+Add test PDFs to `pkg/converter/testdata/` for integration testing.
 
 ### Running Linter
 
 ```bash
 make lint
+```
+
+### Code Quality
+
+```bash
+# Format code
+make fmt
+
+# Run all checks (fmt, lint, test)
+make check
+
+# Install pre-commit hooks
+make install-hooks
 ```
 
 ### Building

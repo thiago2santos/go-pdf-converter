@@ -15,16 +15,18 @@ export CGO_LDFLAGS=-L/opt/homebrew/lib
 ## help: Display this help message
 help:
 	@echo "Available targets:"
-	@echo "  build         - Build the binary"
-	@echo "  test          - Run tests"
-	@echo "  clean         - Remove build artifacts"
-	@echo "  install       - Install binary to GOPATH/bin"
-	@echo "  lint          - Run linters"
-	@echo "  fmt           - Format code"
-	@echo "  run           - Run with example (requires PDF_FILE env var)"
-	@echo "  coverage      - Run tests with coverage"
-	@echo "  install-hooks - Install git pre-commit hooks"
-	@echo "  check         - Run all checks (fmt, lint, test)"
+	@echo "  build            - Build the binary"
+	@echo "  test             - Run unit tests"
+	@echo "  test-race        - Run tests with race detector"
+	@echo "  test-integration - Run integration tests"
+	@echo "  clean            - Remove build artifacts"
+	@echo "  install          - Install binary to GOPATH/bin"
+	@echo "  lint             - Run linters"
+	@echo "  fmt              - Format code"
+	@echo "  run              - Run with example (requires PDF_FILE env var)"
+	@echo "  coverage         - Run tests with coverage"
+	@echo "  install-hooks    - Install git pre-commit hooks"
+	@echo "  check            - Run all checks (fmt, lint, test)"
 
 ## build: Build the binary
 build:
@@ -33,10 +35,20 @@ build:
 	go build ${LDFLAGS} -o ${BUILD_DIR}/${BINARY_NAME} ${MAIN_PATH}
 	@echo "✅ Build complete: ${BUILD_DIR}/${BINARY_NAME}"
 
-## test: Run all tests
+## test: Run unit tests
 test:
-	@echo "Running tests..."
+	@echo "Running unit tests..."
+	go test -v ./...
+
+## test-race: Run tests with race detector (requires CGO)
+test-race:
+	@echo "Running tests with race detector..."
 	go test -v -race ./...
+
+## test-integration: Run integration tests (requires test PDFs)
+test-integration:
+	@echo "Running integration tests..."
+	go test -v -tags=integration ./...
 
 ## coverage: Run tests with coverage
 coverage:
