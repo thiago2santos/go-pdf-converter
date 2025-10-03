@@ -1,0 +1,36 @@
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gofmt
+    - goimports
+    - misspell
+    - unconvert
+    - unparam
+    - gocritic
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/thiago2santos/go-pdf-converter
+  
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - unparam
+
