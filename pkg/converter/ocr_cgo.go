@@ -83,4 +83,3 @@ func (c *Converter) extractTextWithOCR(pdfPath string) (string, error) {
 
 	return text.String(), nil
 }
-
