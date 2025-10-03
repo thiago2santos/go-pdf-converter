@@ -1,0 +1,99 @@
+---
+description: Architecture and structure rules for Go code
+globs: ["**/*.go"]
+alwaysApply: false
+---
+
+# Architecture and Structure
+
+> **Cross-References:**
+> - For development principles (KISS, YAGNI, DRY): [development-principles.mdc](mdc:development-principles.mdc)
+> - For service implementation patterns: [patterns.mdc](mdc:patterns.mdc)
+> - For error handling standards: [critical-rules.mdc](mdc:critical-rules.mdc)
+
+## Directory Organization
+
+**Mandatory Clean Architecture:**
+```
+internal/
+├── business/      # Business rules and validations
+├── config/        # Configuration structures
+├── domain/        # Entities and value objects
+├── infrastructure/ # Adapters (HTTP clients, cache, metrics)
+├── service/       # Application services
+└── usecase/       # Specific use cases
+
+cmd/               # Application entry points
+pkg/               # Reusable utilities
+test/              # Integration tests
+```
+
+## Naming Conventions
+
+**Mandatory patterns:**
+- **Interfaces:** clear name + "Interface" if not obvious (`CalculatorWrapperService`)
+- **Implementations:** name + "Impl" (`CalculatorWrapperServiceImpl`)
+- **Mocks:** name + "Mock" (`ServiceMock`)
+- **Builders:** include "Builder" (`ResponseBuilderImpl`)
+- **Clients:** include "Client" (`CalcClientImpl`)
+- **Test files:** `*_test.go`
+- **Integration tests:** `*_integration_test.go`
+- **Constants:** ALL_CAPS with underscore
+
+## Code Patterns
+
+**Specific best practices:**
+
+```go
+// Nil Checks (README recommendation)
+if len(items) == 0 {
+    // works even if items is nil
+}
+
+// Avoid
+if items != nil && len(items) > 0 {
+    // unnecessary
+}
+
+// Slice Appending
+result = append(result, items...)
+
+// Avoid unnecessary loops
+for _, item := range items {
+    result = append(result, item)
+}
+
+// Simple Returns
+return condition
+
+// Avoid
+if condition {
+    return true
+}
+return false
+```
+
+## Service Implementation Pattern
+
+**Standard structure:**
+```go
+type ServiceImpl struct {
+    Client ClientInterface
+    Config ConfigInterface
+    Metrics MetricsInterface
+}
+
+func (s *ServiceImpl) Method(params config.Params) (Result, error) {
+    // implementation
+}
+```
+
+## Constants
+
+**Constants pattern:**
+```go
+const (
+    DefaultTimeout = 30 * time.Second
+    MaxRetries     = 3
+)
+```

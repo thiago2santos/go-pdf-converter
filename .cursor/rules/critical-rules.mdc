@@ -1,0 +1,273 @@
+---
+description: Critical rules that always apply to Go code generation
+alwaysApply: true
+---
+
+# Critical Rules - Always Apply
+
+## Automatic Test Execution
+
+**MANDATORY COMMAND** - ALWAYS execute after generating Go code:
+
+```bash
+go test -v ./... -covermode=atomic -coverpkg=./... -count=1 -race -timeout=30m -shuffle=on
+```
+
+**Validation Process:**
+1. ALWAYS execute tests after generating code
+2. IF tests fail: Analyze detailed output
+3. Identify root cause of error
+4. Propose specific fix in generated code
+5. Re-execute tests until they pass
+6. IF race conditions exist: Fix immediately
+7. IF timeout: Optimize code or slow mocks
+
+**Fix Examples:**
+```bash
+# If error: "panic: assignment to entry in nil map"
+# Solution: Initialize map before use
+map[string]string{} // instead of nil
+
+# If error: "mock: Unexpected Method Call"
+# Solution: Add mock expectation
+mockService.On("Method", mock.Anything).Return(expectedValue, nil)
+```
+
+## Mandatory Imports
+
+**MANDATORY ORDER:**
+```go
+import (
+    // Standard library
+    "testing"
+    "time"
+    
+    // External packages
+    "github.com/stretchr/testify/assert"
+    "github.com/stretchr/testify/mock"
+    
+    // Internal packages
+    "github.com/thiago2santos/go-pdf-converter/internal/config"
+    "github.com/thiago2santos/go-pdf-converter/pkg/converter"
+)
+```
+
+## Error Handling
+
+**ALWAYS use standard error handling:**
+```go
+// Error always as last parameter
+func Method() (result Type, err error)
+
+// Use fmt.Errorf for wrapping errors
+return fmt.Errorf("operation failed: %w", err)
+```
+
+### Comprehensive Error Handling Patterns
+
+**Validation Errors:**
+```go
+func validateRequest(request Request) error {
+    if request.FilePath == "" {
+        return fmt.Errorf("file path is required")
+    }
+    if request.Options == nil {
+        return fmt.Errorf("options are required")
+    }
+    return nil
+}
+```
+
+**External Service Errors:**
+```go
+func handleAPIError(err error, operation string) error {
+    if err == nil {
+        return nil
+    }
+    
+    if isTimeoutError(err) {
+        return fmt.Errorf("%s timed out: %w", operation, err)
+    }
+    
+    if isNotFoundError(err) {
+        return fmt.Errorf("%s not found: %w", operation, err)
+    }
+    
+    return fmt.Errorf("%s failed: %w", operation, err)
+}
+```
+
+**Service Implementation Error Handling:**
+```go
+func (s *ServiceImpl) Process(request Request) (Response, error) {
+    if err := validateRequest(request); err != nil {
+        return Response{}, err
+    }
+    
+    result, err := s.Client.Execute(request)
+    if err != nil {
+        return Response{}, handleAPIError(err, "execute request")
+    }
+    
+    return result, nil
+}
+```
+
+## Things to Avoid
+
+**CRITICAL: Never do these when generating code:**
+
+### Time Handling in Tests
+```go
+// NEVER use time.Now() directly in tests without mocking
+
+// ALWAYS use fixed time for deterministic tests
+fixedTime := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
+
+// Or mock time if needed
+type Clock interface {
+    Now() time.Time
+}
+```
+
+### Comments in Code
+```go
+// NEVER add unnecessary comments
+// Bad examples:
+i := 0 // initialize counter
+x := x + 1 // increment x
+return result // return the result
+
+// ONLY add comments in these specific cases:
+// 1. Complex business logic that needs explanation
+func calculateProcessingTime(fileSize int64) time.Duration {
+    // Large files require additional processing time according to benchmarks
+    if fileSize > 10*1024*1024 {
+        return baseDuration * 2
+    }
+    // ... rest of implementation
+}
+
+// 2. Non-obvious technical decisions
+// Using buffered channel to prevent goroutine leaks during high load
+resultChan := make(chan Result, 100)
+
+// 3. Workarounds or temporary solutions
+// TODO: Remove this workaround when upstream library fixes the bug
+time.Sleep(100 * time.Millisecond)
+
+// 4. Package-level documentation
+// Package converter provides utilities for converting PDF files
+// with OCR support and various output formats.
+
+// 5. Never use emojis in the comments or code
+```
+
+### Nested If-Else Statements
+```go
+// NEVER create deeply nested if-else statements
+// Bad example:
+func processOrder(order Order) error {
+    if order.IsValid() {
+        if order.HasPayment() {
+            if order.HasItems() {
+                if order.IsInStock() {
+                    return processPayment(order)
+                } else {
+                    return errors.New("items not in stock")
+                }
+            } else {
+                return errors.New("no items in order")
+            }
+        } else {
+            return errors.New("no payment method")
+        }
+    } else {
+        return errors.New("invalid order")
+    }
+}
+
+// ALWAYS use early returns for better readability
+func processOrder(order Order) error {
+    if !order.IsValid() {
+        return errors.New("invalid order")
+    }
+    
+    if !order.HasPayment() {
+        return errors.New("no payment method")
+    }
+    
+    if !order.HasItems() {
+        return errors.New("no items in order")
+    }
+    
+    if !order.IsInStock() {
+        return errors.New("items not in stock")
+    }
+    
+    return processPayment(order)
+}
+
+// ALWAYS prefer guard clauses over nested conditions
+func validateUser(user User) error {
+    if user.Email == "" {
+        return errors.NewBadRequestError(errors.Validation, "email is required")
+    }
+    
+    if user.Age < 18 {
+        return errors.NewBadRequestError(errors.Validation, "user must be 18 or older")
+    }
+    
+    if !user.IsActive {
+        return errors.NewBadRequestError(errors.Validation, "user account is inactive")
+    }
+    
+    return nil
+}
+```
+
+### Other Critical Things to Avoid
+```go
+// NEVER initialize nil maps without checking
+var m map[string]string
+m["key"] = "value" // PANIC!
+
+// ALWAYS initialize maps before use
+m := make(map[string]string)
+m["key"] = "value"
+
+// NEVER use direct HTTP status codes
+return 200, response
+
+// ALWAYS use http.Status constants
+return http.StatusOK, response
+
+// NEVER ignore errors in tests
+result, _ := service.Method()
+
+// ALWAYS handle errors explicitly in tests
+result, err := service.Method()
+assert.NoError(t, err)
+
+// NEVER use string concatenation for paths
+path := "internal" + "/" + "service"
+
+// ALWAYS use filepath.Join
+path := filepath.Join("internal", "service")
+
+// NEVER create mocks without proper setup
+mockClient := new(MockClient)
+// No expectations set!
+
+// ALWAYS set proper mock expectations
+mockClient := new(MockClient)
+mockClient.On("Method", mock.Anything).Return(expectedValue, nil)
+
+// NEVER use magic numbers or strings
+if status == 200 {
+if campaign == "new-buyer" {
+
+// ALWAYS use constants
+if status == http.StatusOK {
+if mode == ModeOCR {
+```

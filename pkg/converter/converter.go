@@ -72,8 +72,7 @@ func (c *Converter) Convert(pdfPath string) (*Result, error) {
 	if c.config.OCRFallback && (textContent == "" || strings.Contains(textContent, "[No text content found on this page]")) {
 		ocrText, err := c.extractTextWithOCR(pdfPath)
 		if err != nil {
-			// OCR failed, but we have the original attempt
-			text += "\n⚠️  OCR failed: " + err.Error() + "\n"
+			text += fmt.Sprintf("\nWARNING: OCR failed: %v\n", err)
 		} else {
 			text = ocrText
 			method = MethodOCR

@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package converter
@@ -7,23 +8,25 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-// These tests require actual PDF files in testdata/
-// Run with: go test -tags=integration ./...
+type integrationTestData struct {
+	pdfFile     string
+	config      *Config
+	expectError bool
+}
 
-func TestConvertRealPDF(t *testing.T) {
-	// Skip if testdata doesn't exist
+func TestIntegration_ConvertRealPDF(t *testing.T) {
 	testdataDir := "testdata"
 	if _, err := os.Stat(testdataDir); os.IsNotExist(err) {
 		t.Skip("testdata directory not found, skipping integration tests")
 	}
 
-	// Find PDF files in testdata
 	files, err := filepath.Glob(filepath.Join(testdataDir, "*.pdf"))
-	if err != nil {
-		t.Fatalf("Failed to find test PDFs: %v", err)
-	}
+	require.NoError(t, err, "Failed to find test PDFs")
 
 	if len(files) == 0 {
 		t.Skip("No PDF files in testdata/, skipping integration tests")
@@ -34,33 +37,14 @@ func TestConvertRealPDF(t *testing.T) {
 	for _, pdfFile := range files {
 		t.Run(filepath.Base(pdfFile), func(t *testing.T) {
 			result, err := conv.Convert(pdfFile)
-			if err != nil {
-				t.Errorf("Convert(%s) failed: %v", pdfFile, err)
-				return
-			}
 
-			// Basic validations
-			if result == nil {
-				t.Error("Convert() returned nil result")
-				return
-			}
+			require.NoError(t, err, "Convert(%s) should not fail", pdfFile)
+			require.NotNil(t, result, "Convert() should return non-nil result")
 
-			if result.Text == "" {
-				t.Error("Convert() returned empty text")
-			}
-
-			if result.TotalPages == 0 {
-				t.Error("Convert() returned 0 pages")
-			}
-
-			if result.Method == "" {
-				t.Error("Convert() returned empty method")
-			}
-
-			// Check statistics are calculated
-			if result.CharactersCount == 0 {
-				t.Error("Convert() returned 0 character count")
-			}
+			assert.NotEmpty(t, result.Text, "Convert() should extract text")
+			assert.NotZero(t, result.TotalPages, "Convert() should have at least one page")
+			assert.NotEmpty(t, result.Method, "Convert() should specify extraction method")
+			assert.NotZero(t, result.CharactersCount, "Convert() should count characters")
 
 			t.Logf("Converted %s: %d pages, %d words, method: %s",
 				filepath.Base(pdfFile),
@@ -71,7 +55,7 @@ func TestConvertRealPDF(t *testing.T) {
 	}
 }
 
-func TestConvertWithOCRFallback(t *testing.T) {
+func TestIntegration_ConvertWithOCRConfig(t *testing.T) {
 	testdataDir := "testdata"
 	if _, err := os.Stat(testdataDir); os.IsNotExist(err) {
 		t.Skip("testdata directory not found, skipping integration tests")
@@ -82,56 +66,42 @@ func TestConvertWithOCRFallback(t *testing.T) {
 		t.Skip("No PDF files in testdata/, skipping integration tests")
 	}
 
-	// Test with OCR enabled
-	conv := New(&Config{
-		OCRFallback: true,
-		Verbose:     false,
-	})
-
-	result, err := conv.Convert(files[0])
-	if err != nil {
-		t.Fatalf("Convert() with OCR fallback failed: %v", err)
+	tests := []struct {
+		name      string
+		config    *Config
+		expectOCR bool
+	}{
+		{
+			name: "Success - with OCR fallback enabled",
+			config: &Config{
+				OCRFallback: true,
+				Verbose:     false,
+			},
+			expectOCR: false,
+		},
+		{
+			name: "Success - with OCR fallback disabled",
+			config: &Config{
+				OCRFallback: false,
+				Verbose:     false,
+			},
+			expectOCR: false,
+		},
 	}
 
-	if result == nil {
-		t.Fatal("Convert() returned nil result")
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conv := New(tt.config)
+			result, err := conv.Convert(files[0])
 
-	// Should have extracted some content
-	if len(strings.TrimSpace(result.Text)) == 0 {
-		t.Error("Convert() extracted no text")
-	}
-}
+			require.NoError(t, err, "Convert() should not fail")
+			require.NotNil(t, result, "Convert() should return non-nil result")
+			assert.NotEmpty(t, strings.TrimSpace(result.Text), "Convert() should extract text")
 
-func TestConvertWithoutOCRFallback(t *testing.T) {
-	testdataDir := "testdata"
-	if _, err := os.Stat(testdataDir); os.IsNotExist(err) {
-		t.Skip("testdata directory not found, skipping integration tests")
-	}
-
-	files, err := filepath.Glob(filepath.Join(testdataDir, "*.pdf"))
-	if err != nil || len(files) == 0 {
-		t.Skip("No PDF files in testdata/, skipping integration tests")
-	}
-
-	// Test with OCR disabled
-	conv := New(&Config{
-		OCRFallback: false,
-		Verbose:     false,
-	})
-
-	result, err := conv.Convert(files[0])
-	if err != nil {
-		t.Fatalf("Convert() without OCR fallback failed: %v", err)
-	}
-
-	if result == nil {
-		t.Fatal("Convert() returned nil result")
-	}
-
-	// Method should be text extraction only
-	if result.Method == MethodOCR {
-		t.Error("Convert() used OCR when OCRFallback was disabled")
+			if !tt.config.OCRFallback {
+				assert.NotEqual(t, MethodOCR, result.Method,
+					"Convert() should not use OCR when OCRFallback is disabled")
+			}
+		})
 	}
 }
-

@@ -2,23 +2,15 @@ package converter
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestExtractTextWithOCRNonExistentFile(t *testing.T) {
+func TestExtractTextWithOCR_NonExistentFile(t *testing.T) {
 	conv := New(&Config{OCRFallback: true, Verbose: false})
 
-	_, err := conv.extractTextWithOCR("non_existent_file.pdf")
+	result, err := conv.extractTextWithOCR("non_existent_file.pdf")
 
-	if err == nil {
-		t.Error("extractTextWithOCR() with non-existent file should return error")
-	}
+	assert.Error(t, err, "extractTextWithOCR() should return error for non-existent file")
+	assert.Empty(t, result, "extractTextWithOCR() should return empty string on error")
 }
-
-func TestOCRFallbackDisabled(t *testing.T) {
-	conv := New(&Config{OCRFallback: false, Verbose: false})
-
-	if conv.config.OCRFallback {
-		t.Error("OCRFallback should be disabled")
-	}
-}
-

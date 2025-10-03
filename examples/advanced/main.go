@@ -9,10 +9,16 @@ import (
 	"github.com/thiago2santos/go-pdf-converter/pkg/converter"
 )
 
+const (
+	outputFilePerms = 0o644
+	requiredArgs    = 2
+	exitCodeError   = 1
+)
+
 func main() {
-	if len(os.Args) != 2 {
+	if len(os.Args) != requiredArgs {
 		fmt.Println("Usage: go run main.go <pdf_file>")
-		os.Exit(1)
+		os.Exit(exitCodeError)
 	}
 
 	pdfPath := os.Args[1]
@@ -52,10 +58,10 @@ func main() {
 
 	// Save to file
 	outputFile := "output.txt"
-	err = os.WriteFile(outputFile, []byte(result.Text), 0644)
+	err = os.WriteFile(outputFile, []byte(result.Text), outputFilePerms)
 	if err != nil {
 		log.Fatalf("Failed to save output: %v", err)
 	}
 
-	fmt.Printf("\n✅ Output saved to: %s\n", outputFile)
+	fmt.Printf("\nOutput saved to: %s\n", outputFile)
 }

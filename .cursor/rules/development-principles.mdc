@@ -1,0 +1,295 @@
+---
+description: Core development principles for clean, maintainable Go code
+globs: ["**/*.go"]
+alwaysApply: false
+---
+
+# Development Principles
+
+## Core Development Principles
+
+### KISS (Keep It Simple, Stupid)
+- Keep code simple and straightforward
+- Avoid complex solutions when simpler alternatives exist
+- Prioritize clarity over premature optimization
+- Choose the simplest solution that works
+- Avoid over-engineering
+
+**Go Examples:**
+
+```go
+// GOOD - Simple and clear
+func calculateTax(price float64, rate float64) float64 {
+    return price * rate
+}
+
+// BAD - Over-engineered for simple calculation
+type TaxCalculator struct {
+    strategies map[string]TaxStrategy
+    factory    StrategyFactory
+}
+
+func (tc *TaxCalculator) CalculateWithStrategy(price float64, strategyName string) float64 {
+    strategy := tc.factory.CreateStrategy(strategyName)
+    return strategy.Calculate(price)
+}
+```
+
+```go
+// GOOD - Simple error handling
+func processFile(path string) error {
+    if path == "" {
+        return fmt.Errorf("file path is required")
+    }
+    return processFileLogic(path)
+}
+
+// BAD - Unnecessary complexity
+type ValidationResult struct {
+    IsValid bool
+    Errors  []ValidationError
+}
+
+func (v *Validator) ValidateFilePath(path string) ValidationResult {
+    result := ValidationResult{IsValid: true, Errors: make([]ValidationError, 0)}
+    if path == "" {
+        result.IsValid = false
+        result.Errors = append(result.Errors, ValidationError{Field: "path", Message: "required"})
+    }
+    return result
+}
+```
+
+### YAGNI (You Aren't Gonna Need It)
+- Don't implement features until they are necessary
+- Avoid over-engineering
+- Keep code focused on current requirements
+- Add complexity only when it's actually needed
+
+**Go Examples:**
+
+```go
+// GOOD - Only implement what's needed now
+type ConverterService struct {
+    Converter PDFConverter
+}
+
+func (s *ConverterService) Convert(request ConvertRequest) (ConvertResponse, error) {
+    return s.Converter.Convert(request)
+}
+
+// BAD - Adding features "just in case"
+type ConverterService struct {
+    Converter      PDFConverter
+    Cache          CacheService       // Not needed yet
+    MetricsService MetricsService     // Not needed yet
+    Logger         LoggerService      // Not needed yet
+    EventBus       EventBusService    // Not needed yet
+}
+
+func (s *ConverterService) Convert(request ConvertRequest) (ConvertResponse, error) {
+    // Complex caching logic that's not required yet
+    cacheKey := s.generateCacheKey(request)
+    if cached := s.Cache.Get(cacheKey); cached != nil {
+        s.MetricsService.IncrementCacheHit()
+        return cached.(ConvertResponse), nil
+    }
+    
+    result, err := s.Converter.Convert(request)
+    if err != nil {
+        s.Logger.Error("conversion failed", err)
+        s.EventBus.Publish("conversion.failed", request)
+        return ConvertResponse{}, err
+    }
+    
+    s.Cache.Set(cacheKey, result)
+    s.MetricsService.IncrementConversion()
+    return result, nil
+}
+```
+
+```go
+// GOOD - Simple configuration
+type Config struct {
+    APIUrl string
+    Timeout time.Duration
+}
+
+// BAD - Over-engineered configuration "for future flexibility"
+type Config struct {
+    API      APIConfig
+    Database DatabaseConfig  // Not needed
+    Cache    CacheConfig     // Not needed
+    Metrics  MetricsConfig   // Not needed
+    Logging  LoggingConfig   // Not needed
+}
+
+type APIConfig struct {
+    Primary   EndpointConfig
+    Secondary EndpointConfig  // Not needed
+    Fallback  EndpointConfig  // Not needed
+}
+```
+
+### DRY (Don't Repeat Yourself)
+- Avoid code duplication
+- Extract common functionality into reusable functions/modules
+- Single source of truth for business logic
+- Use constants for repeated values
+
+**Go Examples:**
+
+```go
+// GOOD - Extract common validation logic
+// For detailed error handling patterns, see critical-rules.mdc
+func validateConvertRequest(request ConvertRequest) error {
+    return validateRequestFields(request) // Extract validation logic
+}
+
+func ConvertWithOCR(request ConvertRequest) (ConvertResponse, error) {
+    if err := validateConvertRequest(request); err != nil {
+        return ConvertResponse{}, err
+    }
+    // process with OCR
+}
+
+func ConvertWithoutOCR(request ConvertRequest) (ConvertResponse, error) {
+    if err := validateConvertRequest(request); err != nil {
+        return ConvertResponse{}, err
+    }
+    // process without OCR
+}
+
+// BAD - Duplicated validation logic
+func ConvertWithOCR(request ConvertRequest) (ConvertResponse, error) {
+    if request.FilePath == "" {
+        return ConvertResponse{}, errors.New("file path required") // Duplicated validation
+    }
+    if request.OutputFormat == "" {
+        return ConvertResponse{}, errors.New("output format required") // Duplicated validation
+    }
+    // process with OCR
+}
+```
+
+```go
+// GOOD - Constants for repeated values
+const (
+    DefaultTimeout = 30 * time.Second
+    MaxRetries     = 3
+    CacheExpiry    = 5 * time.Minute
+)
+
+// BAD - Magic numbers scattered throughout code
+func callAPI() {
+    client := &http.Client{Timeout: 30 * time.Second} // Repeated value
+}
+
+func retryOperation() {
+    for i := 0; i < 3; i++ { // Magic number
+        // retry logic
+    }
+}
+
+func setCacheValue(key, value string) {
+    cache.Set(key, value, 5*time.Minute) // Repeated value
+}
+```
+
+```go
+// GOOD - Extract common error handling
+// For detailed error handling patterns, see critical-rules.mdc
+func handleAPIError(err error, operation string) error {
+    // Implementation follows project error handling standards
+    return processError(err, operation)
+}
+
+// Usage across multiple functions
+func ConvertPDF(path string) (ConvertResult, error) {
+    result, err := converter.Convert(path)
+    return result, handleAPIError(err, "convert PDF")
+}
+
+func ExtractText(path string) (string, error) {
+    result, err := ocr.Extract(path)
+    return result, handleAPIError(err, "extract text")
+}
+```
+
+## Applying Principles Together
+
+**Example: Refactoring with all three principles**
+
+```go
+// BEFORE - Violates KISS, YAGNI, and DRY
+type ComplexPDFProcessor struct {
+    primary   PDFConverter
+    secondary PDFConverter    // YAGNI - not needed yet
+    cache     map[string]interface{} // YAGNI - premature optimization
+    metrics   MetricsCollector     // YAGNI - not required
+}
+
+func (p *ComplexPDFProcessor) ProcessWithFallback(req ConvertRequest) (ConvertResponse, error) {
+    // DRY violation - repeated validation
+    if req.FilePath == "" {
+        return ConvertResponse{}, errors.New("file path required")
+    }
+    if req.OutputFormat == "" {
+        return ConvertResponse{}, errors.New("output format required")
+    }
+    
+    // KISS violation - unnecessary complexity
+    cacheKey := fmt.Sprintf("%s_%s_%d", req.FilePath, req.OutputFormat, req.PageCount)
+    if cached, exists := p.cache[cacheKey]; exists {
+        p.metrics.IncrementCacheHit()
+        return cached.(ConvertResponse), nil
+    }
+    
+    result, err := p.primary.Convert(req)
+    if err != nil {
+        // YAGNI - fallback not needed yet
+        result, err = p.secondary.Convert(req)
+        if err != nil {
+            p.metrics.IncrementError()
+            return ConvertResponse{}, err
+        }
+        p.metrics.IncrementFallback()
+    }
+    
+    p.cache[cacheKey] = result
+    p.metrics.IncrementSuccess()
+    return result, nil
+}
+
+// AFTER - Applies KISS, YAGNI, and DRY
+// For validation error patterns, see critical-rules.mdc
+func validateConvertRequest(req ConvertRequest) error {
+    // Use centralized validation following project error standards
+    return performValidation(req)
+}
+
+type PDFProcessor struct {
+    Converter PDFConverter
+}
+
+func (p *PDFProcessor) Process(req ConvertRequest) (ConvertResponse, error) {
+    if err := validateConvertRequest(req); err != nil {
+        return ConvertResponse{}, err
+    }
+    
+    return p.Converter.Convert(req)
+}
+```
+
+## Integration with Project Rules
+
+These principles work together with our existing rules:
+
+- **KISS** aligns with our "avoid nested if-else" and "use early returns" rules
+- **YAGNI** supports our focus on testing actual requirements, not hypothetical scenarios  
+- **DRY** complements our utility usage patterns and error handling standards
+
+When implementing new features, always ask:
+1. **KISS**: Is this the simplest solution that works?
+2. **YAGNI**: Do we actually need this feature/complexity now?
+3. **DRY**: Are we repeating logic that could be extracted?

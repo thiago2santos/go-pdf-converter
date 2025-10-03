@@ -1,0 +1,165 @@
+---
+description: Unit testing patterns and best practices for Go test files
+globs: ["**/*_test.go", "!**/*_integration_test.go"]
+alwaysApply: false
+---
+
+# Unit Tests
+
+## Table-Driven Tests (MANDATORY)
+
+**Mandatory standard structure:**
+```go
+func TestFunctionName(t *testing.T) {
+    tests := []struct {
+        name           string
+        input          InputType
+        mockedResponses mockedResponses
+        expected       ExpectedType
+        expectedError  error
+    }{
+        {
+            name: "Success - descriptive case name",
+            input: InputType{},
+            mockedResponses: mockedResponses{
+                response: ExpectedResponse{},
+                error: nil,
+            },
+            expected: ExpectedType{},
+            expectedError: nil,
+        },
+        {
+            name: "Fail - descriptive error case",
+            // ... error case
+        },
+    }
+    
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            // Setup
+            service, mockClient := setUp()
+            mockClient.On("Method", mock.Anything).Return(tt.mockedResponses.response, tt.mockedResponses.error)
+            
+            // Execute
+            got, gotErr := service.Method(tt.input)
+            
+            // Assert
+            assert.Equalf(t, tt.expected, got, "Method(%v)", tt.input)
+            assert.Equalf(t, tt.expectedError, gotErr, "Method(%v)", tt.input)
+        })
+    }
+}
+```
+
+## Setup Function Pattern
+
+**Mandatory pattern:**
+```go
+func setUp() (ServiceImpl, *MockClient, *MockDependency) {
+    mockClient := new(MockClient)
+    mockDep := new(MockDependency)
+    service := ServiceImpl{
+        Client: mockClient,
+        Dependency: mockDep,
+    }
+    return service, mockClient, mockDep
+}
+```
+
+## Mock Patterns
+
+**Standard structure:**
+```go
+type ServiceMock struct {
+    mock.Mock
+}
+
+func (m *ServiceMock) MethodName(param ParamType) (ReturnType, error) {
+    args := m.Called(param)
+    return args.Get(0).(ReturnType), args.Error(1)
+}
+```
+
+## Unit Test Best Practices
+
+**MANDATORY: Always include both success and error cases:**
+```go
+tests := []struct {
+    name           string
+    input          InputType
+    expectedResult ExpectedType
+    expectedError  error
+}{
+    {
+        name: "Success - valid input returns expected result",
+        input: ValidInput{},
+        expectedResult: ExpectedResult{},
+        expectedError: nil,
+    },
+    {
+        name: "Error - invalid input returns validation error",
+        input: InvalidInput{},
+        expectedResult: ExpectedType{}, // zero value
+        expectedError: expectedValidationError, // Use project error patterns
+    },
+    {
+        name: "Error - external service failure",
+        input: ValidInput{},
+        expectedResult: ExpectedType{}, // zero value
+        expectedError: expectedServiceError, // Use project error patterns
+    },
+}
+```
+
+**NEVER test these irrelevant things:**
+```go
+// NEVER test constants
+const MaxRetries = 3
+// No test needed for this!
+
+// NEVER test simple variable assignments
+var userID = "12345"
+// No test needed for this!
+
+// NEVER test struct field assignments
+type User struct {
+    ID   string
+    Name string
+}
+user := User{ID: "123", Name: "John"}
+// No test needed for simple struct creation!
+
+// NEVER test trivial getters/setters
+func (u *User) GetID() string {
+    return u.ID
+}
+// No test needed for simple getters!
+```
+
+**ALWAYS test these important things:**
+```go
+// ALWAYS test business logic
+func CalculatePageCount(fileSize int64) (int, error) {
+    // Complex calculation logic - NEEDS TESTING
+}
+
+// ALWAYS test validation logic
+func ValidateFileFormat(format string) error {
+    // Validation rules - NEEDS TESTING
+}
+
+// ALWAYS test error handling
+func ProcessConversion(input string) error {
+    // Error scenarios - NEEDS TESTING
+}
+
+// ALWAYS test conditional logic
+func DetermineOutputFormat(params ConvertParams) (string, error) {
+    // Business rules with conditions - NEEDS TESTING
+}
+
+// ALWAYS test integration points
+func (c *Converter) ConvertPDF(request ConvertRequest) (ConvertResponse, error) {
+    // External service calls - NEEDS TESTING (with mocks)
+}
+```

@@ -1,0 +1,56 @@
+---
+description: Project-specific patterns for services, infrastructure, and business logic
+globs: ["**/internal/**/*.go", "**/pkg/**/*.go"]
+alwaysApply: false
+---
+
+# Project-Specific Patterns
+
+## Configuration Pattern
+
+**Configuration usage:**
+```go
+type Config struct {
+    EnableOCR bool
+    Timeout   time.Duration
+}
+
+func LoadConfig() (*Config, error) {
+    // Load configuration from environment or file
+}
+```
+
+## Builder Pattern
+
+**Mandatory pattern:**
+```go
+type ConvertOptionsBuilder interface {
+    WithOCR(enabled bool) ConvertOptionsBuilder
+    WithDPI(dpi int) ConvertOptionsBuilder
+    Build() ConvertOptions
+}
+
+type ConvertOptionsBuilderImpl struct {
+    options ConvertOptions
+}
+```
+
+## Pre-Commit Checklist
+
+**ALWAYS verify:**
+- Tests executed with complete command
+- All tests passing
+- No race conditions detected
+- Adequate test coverage
+- Mocks properly configured
+- Error handling following project patterns
+
+## Quality Guarantees
+
+This rules structure guarantees:
+
+1. **Consistency:** Generated code will follow exactly the established patterns
+2. **Maintainability:** Organized structure facilitates updates
+3. **Testability:** Test patterns ensure adequate coverage + automatic execution
+4. **Performance:** Correct use of utilities and optimized patterns
+5. **Quality:** Automatic tests ensure functional code

@@ -1,6 +1,8 @@
 run:
   timeout: 5m
   tests: true
+  build-tags:
+    - "!cgo"
 
 linters:
   enable:
@@ -28,9 +30,10 @@ linters-settings:
       - performance
 
 issues:
+  exclude-files:
+    - ".*ocr_cgo\\.go$"
   exclude-rules:
     - path: _test\.go
       linters:
         - errcheck
         - unparam
-

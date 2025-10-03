@@ -1,0 +1,128 @@
+---
+description: Translation and internationalization rules for i18n components
+globs: ["**/i18n/**/*", "**/translations/**/*"]
+alwaysApply: false
+---
+
+# Translations and Internationalization
+
+> **Cross-References:**
+> - For testing translation components: [unit-tests.mdc](mdc:unit-tests.mdc)
+> - For integration testing with translations: [integration-tests.mdc](mdc:integration-tests.mdc)
+
+## Supported Locales
+
+**Standard locales for internationalization:**
+- **en-US:** English (United States)
+- **es-ES:** Spanish (Spain)  
+- **pt-BR:** Brazilian Portuguese
+- **fr-FR:** French (France)
+
+## Translation Tests Pattern
+
+**Mandatory structure:**
+```go
+func TestTranslation_Locales(t *testing.T) {
+    tests := []struct {
+        name           string
+        locale         string
+        messageKey     string
+        params         map[string]interface{}
+        expected       string
+    }{
+        {
+            name: "Success - English",
+            locale: "en-US",
+            messageKey: "conversion.success",
+            params: map[string]interface{}{},
+            expected: "Conversion successful",
+        },
+        {
+            name: "Success - Spanish", 
+            locale: "es-ES",
+            messageKey: "conversion.success",
+            params: map[string]interface{}{},
+            expected: "Conversión exitosa",
+        },
+        {
+            name: "Success - Portuguese",
+            locale: "pt-BR", 
+            messageKey: "conversion.success",
+            params: map[string]interface{}{},
+            expected: "Conversão bem-sucedida",
+        },
+    }
+    
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            result := translateMessage(tt.locale, tt.messageKey, tt.params)
+            assert.Equal(t, tt.expected, result, "Translation for %s", tt.locale)
+        })
+    }
+}
+```
+
+## Specific Locale Validations
+
+**Validate correct language:**
+```go
+// Validate that language is correct for each locale
+func validateTranslationLanguage(locale, translation string) bool {
+    switch locale {
+    case "es-ES":
+        // Check Spanish words
+        spanishKeywords := []string{"conversión", "exitosa", "archivo", "formato"}
+        return containsAnyKeyword(translation, spanishKeywords)
+    case "pt-BR":
+        // Check Portuguese words
+        portugueseKeywords := []string{"conversão", "sucedida", "arquivo", "formato"}
+        return containsAnyKeyword(translation, portugueseKeywords)
+    }
+    return false
+}
+
+func containsAnyKeyword(text string, keywords []string) bool {
+    textLower := strings.ToLower(text)
+    for _, keyword := range keywords {
+        if strings.Contains(textLower, keyword) {
+            return true
+        }
+    }
+    return false
+}
+```
+
+## i18n Files Structure
+
+**Organization:**
+```
+i18n/
+├── en-US/
+│   └── messages.json
+├── es-ES/
+│   └── messages.json
+└── pt-BR/
+    └── messages.json
+```
+
+## Translation Integration Tests
+
+**Integration tests:**
+```go
+func TestTranslationIntegration_Locales(t *testing.T) {
+    supportedLocales := []string{"en-US", "es-ES", "pt-BR"}
+    
+    for _, locale := range supportedLocales {
+        t.Run(fmt.Sprintf("Locale_%s", locale), func(t *testing.T) {
+            i18n := getI18nInstance(locale)
+            
+            // Test common conversion messages
+            success := i18n.Translate("conversion.success")
+            assert.NotEmpty(t, success, "Conversion success translation missing for %s", locale)
+            
+            error := i18n.Translate("conversion.error")
+            assert.NotEmpty(t, error, "Conversion error translation missing for %s", locale)
+        })
+    }
+}
+```

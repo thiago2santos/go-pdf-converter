@@ -1,0 +1,141 @@
+---
+description: Integration testing patterns and structure
+globs: ["**/test/**/*_integration_test.go", "**/test/**/*.go", "**/*_integration_test.go"]
+alwaysApply: false
+---
+
+# Integration Tests
+
+## Standard Integration Test Structure
+
+**Mandatory naming:**
+- **Files:** `*_integration_test.go` in root or `test/` directory
+- **Main function:** `TestIntegration_FeatureName(t *testing.T)`
+- **Table-driven tests** with `testData` maps
+
+**Mandatory template:**
+```go
+func TestIntegration_FeatureName(t *testing.T) {
+    testCases := []testName{
+        {"Success - Default Case"},
+        {"Error - Invalid Input"},
+        {"Error - File Not Found"},
+        {"Error - Processing Failed"},
+    }
+    
+    for _, tc := range testCases {
+        t.Run(tc.name, func(t *testing.T) {
+            runFeatureTest(t, tc.name, featureTestCases[tc.name])
+        })
+    }
+}
+
+var featureTestCases = map[string]testData{
+    "Success - Default Case": {
+        inputFile:          "testdata/sample.pdf",
+        outputFormat:       "png",
+        expectedStatus:     "success",
+        expectedFileCount:  3,
+    },
+}
+```
+
+## testData Structure (mandatory)
+
+**All necessary fields:**
+```go
+type testData struct {
+    // Input data
+    inputFile      string
+    outputFormat   string
+    options        map[string]interface{}
+    
+    // Expectations
+    expectedStatus     string
+    expectedFileCount  int
+    expectedError      error
+    
+    // Configuration
+    enableOCR          bool
+    skipValidation     bool
+}
+```
+
+## Test Case Naming Pattern
+
+**Template:** `"Status - Feature - Specific_Description"`
+
+**Correct examples:**
+```go
+"Success - Convert PDF to PNG"
+"Success - Convert with OCR enabled"
+"Error - Missing input file"
+"Error - Invalid output format"
+"Error - Processing failed"
+```
+
+## Test Data Files Structure
+
+**Mandatory organization:**
+```
+pkg/converter/testdata/
+├── sample.pdf
+├── multi_page.pdf
+├── corrupted.pdf
+└── README.md
+```
+
+## Standard Error Cases for Integration Tests
+
+**Always include these cases:**
+```go
+errorTestCases := []testName{
+    {"Error - Missing input file"},
+    {"Error - Invalid output format"}, 
+    {"Error - File not found"},
+    {"Error - Corrupted PDF file"},
+    {"Error - Unsupported format"},
+    {"Error - Processing timeout"},
+    {"Error - Insufficient permissions"},
+}
+```
+
+## Template for New Integration Test
+
+**Complete template:**
+```go
+package converter
+
+import (
+    "testing"
+    
+    "github.com/stretchr/testify/assert"
+    "github.com/stretchr/testify/require"
+)
+
+func TestIntegration_NewFeature(t *testing.T) {
+    testCases := []testName{
+        {"Success - Default case"},
+        {"Success - With OCR enabled"},
+        {"Error - Invalid input"},
+        {"Error - File not found"},
+    }
+    
+    for _, tc := range testCases {
+        t.Run(tc.name, func(t *testing.T) {
+            runFeatureTest(t, tc.name, newFeatureTestCases[tc.name])
+        })
+    }
+}
+
+var newFeatureTestCases = map[string]testData{
+    "Success - Default case": {
+        inputFile:         "testdata/sample.pdf",
+        outputFormat:      "png",
+        expectedStatus:    "success",
+        expectedFileCount: 3,
+        enableOCR:         false,
+    },
+    // ... add other cases
+}
+```
