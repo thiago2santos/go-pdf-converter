@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/thiago2santos/go-pdf-converter/pkg/converter"
 )
@@ -33,9 +34,9 @@ func main() {
 	}
 
 	// Analyze results
-	fmt.Printf("\n" + "="*50 + "\n")
+	fmt.Printf("\n%s\n", strings.Repeat("=", 50))
 	fmt.Printf("CONVERSION SUMMARY\n")
-	fmt.Printf("="*50 + "\n")
+	fmt.Printf("%s\n", strings.Repeat("=", 50))
 	fmt.Printf("File: %s\n", pdfPath)
 	fmt.Printf("Method: %s\n", result.Method)
 	fmt.Printf("Pages: %d\n", result.TotalPages)

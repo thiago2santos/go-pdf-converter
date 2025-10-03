@@ -24,21 +24,13 @@ jobs:
       with:
         go-version: ${{ matrix.go }}
 
-    - name: Install Tesseract (Ubuntu)
-      if: runner.os == 'Linux'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y tesseract-ocr libtesseract-dev
-
-    - name: Install Tesseract (macOS)
-      if: runner.os == 'macOS'
-      run: brew install tesseract
-
     - name: Download dependencies
       run: go mod download
 
-    - name: Run tests
+    - name: Run tests (without OCR)
       run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+      env:
+        CGO_ENABLED: 0
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
@@ -64,7 +56,9 @@ jobs:
       uses: golangci/golangci-lint-action@v4
       with:
         version: latest
-        args: --timeout=5m
+        args: --timeout=5m --out-format=colored-line-number
+      env:
+        CGO_ENABLED: 0
 
   build:
     name: Build
@@ -79,8 +73,8 @@ jobs:
       with:
         go-version: '1.23'
 
-    - name: Build
-      run: make build
+    - name: Build (without OCR)
+      run: CGO_ENABLED=0 go build -o bin/pdf-converter ./cmd/pdf-converter
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
