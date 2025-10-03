@@ -96,7 +96,7 @@ func (c *Converter) Convert(pdfPath string) (*Result, error) {
 }
 
 // extractTextFromPDF extracts text directly from a PDF file.
-func (c *Converter) extractTextFromPDF(pdfPath string) (string, int, error) {
+func (c *Converter) extractTextFromPDF(pdfPath string) (result string, pages int, err error) {
 	f, r, err := pdf.Open(pdfPath)
 	if err != nil {
 		return "", 0, err
@@ -104,11 +104,11 @@ func (c *Converter) extractTextFromPDF(pdfPath string) (string, int, error) {
 	defer f.Close()
 
 	var text strings.Builder
-	totalPages := r.NumPage()
+	pages = r.NumPage()
 
-	text.WriteString(fmt.Sprintf("Total Pages: %d\n\n", totalPages))
+	text.WriteString(fmt.Sprintf("Total Pages: %d\n\n", pages))
 
-	for pageIndex := 1; pageIndex <= totalPages; pageIndex++ {
+	for pageIndex := 1; pageIndex <= pages; pageIndex++ {
 		p := r.Page(pageIndex)
 		if p.V.IsNull() {
 			continue
@@ -130,5 +130,5 @@ func (c *Converter) extractTextFromPDF(pdfPath string) (string, int, error) {
 		text.WriteString("\n\n")
 	}
 
-	return text.String(), totalPages, nil
+	return text.String(), pages, nil
 }

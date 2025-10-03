@@ -15,14 +15,16 @@ export CGO_LDFLAGS=-L/opt/homebrew/lib
 ## help: Display this help message
 help:
 	@echo "Available targets:"
-	@echo "  build      - Build the binary"
-	@echo "  test       - Run tests"
-	@echo "  clean      - Remove build artifacts"
-	@echo "  install    - Install binary to GOPATH/bin"
-	@echo "  lint       - Run linters"
-	@echo "  fmt        - Format code"
-	@echo "  run        - Run with example (requires PDF_FILE env var)"
-	@echo "  coverage   - Run tests with coverage"
+	@echo "  build         - Build the binary"
+	@echo "  test          - Run tests"
+	@echo "  clean         - Remove build artifacts"
+	@echo "  install       - Install binary to GOPATH/bin"
+	@echo "  lint          - Run linters"
+	@echo "  fmt           - Format code"
+	@echo "  run           - Run with example (requires PDF_FILE env var)"
+	@echo "  coverage      - Run tests with coverage"
+	@echo "  install-hooks - Install git pre-commit hooks"
+	@echo "  check         - Run all checks (fmt, lint, test)"
 
 ## build: Build the binary
 build:
@@ -88,4 +90,9 @@ deps:
 ## check: Run all checks (fmt, lint, test)
 check: fmt lint test
 	@echo "✅ All checks passed"
+
+## install-hooks: Install git pre-commit hooks
+install-hooks:
+	@echo "Installing git hooks..."
+	@bash scripts/install-hooks.sh
 

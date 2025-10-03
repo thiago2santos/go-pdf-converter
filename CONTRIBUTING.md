@@ -65,6 +65,9 @@ cd go-pdf-converter
 # Install dependencies
 go mod download
 
+# Install git hooks (recommended)
+make install-hooks
+
 # Build
 make build
 
@@ -73,6 +76,22 @@ make test
 
 # Run linter
 make lint
+```
+
+### Git Hooks
+
+We use pre-commit hooks to ensure code quality. The hooks will:
+- Check code formatting with `gofmt`
+- Run `golangci-lint` before each commit
+
+**Install hooks:**
+```bash
+make install-hooks
+```
+
+**Skip hooks (when needed):**
+```bash
+git commit --no-verify
 ```
 
 ### Project Structure

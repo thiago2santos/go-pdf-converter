@@ -27,6 +27,13 @@ func (c *Converter) extractTextWithOCR(pdfPath string) (string, error) {
 	defer ocrClient.Close()
 
 	var text strings.Builder
+	var tmpFiles []string
+	defer func() {
+		for _, tmpFile := range tmpFiles {
+			os.Remove(tmpFile)
+		}
+	}()
+
 	text.WriteString(fmt.Sprintf("Total Pages: %d\n\n", doc.NumPage()))
 
 	for i := 0; i < doc.NumPage(); i++ {
@@ -50,15 +57,16 @@ func (c *Converter) extractTextWithOCR(pdfPath string) (string, error) {
 			continue
 		}
 		tmpFileName := tmpFile.Name()
-		defer os.Remove(tmpFileName)
 
 		// Save image to temp file
 		err = png.Encode(tmpFile, img)
 		tmpFile.Close()
 		if err != nil {
+			os.Remove(tmpFileName)
 			text.WriteString(fmt.Sprintf("[Error saving image for page %d: %v]\n", i+1, err))
 			continue
 		}
+		tmpFiles = append(tmpFiles, tmpFileName)
 
 		// Perform OCR on the image
 		err = ocrClient.SetImage(tmpFileName)

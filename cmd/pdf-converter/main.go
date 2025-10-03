@@ -55,7 +55,7 @@ func main() {
 	content := fmt.Sprintf("PDF: %s\nExtraction Method: %s\n\n%s",
 		filepath.Base(pdfPath), result.Method, result.Text)
 
-	err = os.WriteFile(outputPath, []byte(content), 0644)
+	err = os.WriteFile(outputPath, []byte(content), 0o644)
 	if err != nil {
 		log.Fatalf("❌ Error writing output: %v", err)
 	}
