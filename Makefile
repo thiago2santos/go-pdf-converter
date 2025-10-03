@@ -7,6 +7,11 @@ MAIN_PATH=./cmd/pdf-converter
 VERSION?=1.0.0
 LDFLAGS=-ldflags "-X main.version=${VERSION}"
 
+# CGO flags for Tesseract (adjust paths based on your OS)
+# macOS Homebrew
+export CGO_CPPFLAGS=-I/opt/homebrew/include
+export CGO_LDFLAGS=-L/opt/homebrew/lib
+
 ## help: Display this help message
 help:
 	@echo "Available targets:"
