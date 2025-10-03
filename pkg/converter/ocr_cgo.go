@@ -1,3 +1,6 @@
+//go:build cgo
+// +build cgo
+
 package converter
 
 import (
@@ -80,3 +83,4 @@ func (c *Converter) extractTextWithOCR(pdfPath string) (string, error) {
 
 	return text.String(), nil
 }
+

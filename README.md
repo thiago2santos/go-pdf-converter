@@ -47,20 +47,26 @@ tar -xzf pdf-converter_*.tar.gz
 sudo mv pdf-converter /usr/local/bin/
 ```
 
+**Note:** Pre-built binaries support text extraction but **not OCR**. For OCR support, use Option 3 (build from source with Tesseract).
+
 ### Option 2: Install with Go
 
 ```bash
 go install github.com/thiago2santos/go-pdf-converter/cmd/pdf-converter@latest
 ```
 
-### Option 3: Build from Source
+### Option 3: Build from Source (with OCR support)
+
+To enable OCR support, first install Tesseract (see Prerequisites above), then:
 
 ```bash
 git clone https://github.com/thiago2santos/go-pdf-converter.git
 cd go-pdf-converter
+
+# Build with OCR support (requires Tesseract)
 make build
 
-# Binary will be in ./bin/pdf-converter
+# Binary will be in ./bin/pdf-converter with full OCR support
 # Optional: Install to PATH
 sudo cp bin/pdf-converter /usr/local/bin/
 ```
